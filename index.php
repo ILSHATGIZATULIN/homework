@@ -1,35 +1,78 @@
 <?php
-//echo '<pre>';
-//var_dump($_REQUEST);
+echo '<pre>';
+var_dump($_REQUEST);
+$r = print_r($_REQUEST, true);
+echo '</pre>';
 $message = false;//
 $error = false;// для ошибок
 $r=$_REQUEST;
-if (isset ($r['name'],$r['phone'],$r['email'],$r['gender'],$r['ceh'])) {
+
+require 'Db.php';
+$type = isset($_REQUEST['type']) ? $_REQUEST['type'] : 'Json';
+$db = new Db($type);
+$saved = $db->getContents();
+
+echo '<div class="alert alert-notice">Создано объектов: ' . Db::$count . '</div>';
+
+if (isset ($r['name'],$r['email'],$r['ceh'])) {
     $name = $r['name'];
-    $phone = $r['phone'];
+    //$phone = $r['phone'];
     $email = $r['email'];
-    $gender = $r['gender'];
+    //$gender = $r['gender'];
     $ceh= $r['ceh'];
 
+    if (empty($name) || empty($email) || empty ($ceh)) {
+        $error = ' Заполните поля: ';
+    } else {
+        if(isCorrectLength($name, 2, 13)) {
+            $db->saveNewItem([
+                "ceh" => $ceh,
+                "name" => $name,
+                "email" => $email,
+                "date" => date('Y-m-d H:i')
+            ]);
+            $message = 'Спасибо мы с вами свяжемся.';
+        } else {
+            $error = 'Не корректная длина имени';
+        }
 
-}
-if (empty($name) || empty($phone) || empty($email) || empty ($gender) || empty ($ceh)) {
-    $error = ' Заполните поля';
-} else {
-    $row = 'здравтсвуйте,' . $name .
-        'Ваш номер:' . $phone .
-        'Ваш емаил:' . $email .
-        'Ваша Фамилия:' . $gender .
-        'Ваш цех'  .$ceh . PHP_EOL;
+        $row = 'здравтсвуйте,' . $name .
 
-    file_put_contents('./contacts.txt',
-        $row,
-        FILE_APPEND);
-    $message = 'Спасибо мы с вами свяжемся.';
+            'Ваш емаил:' . $email .
+            'Ваш цех' . $ceh . PHP_EOL;
+
+    }
+} elseif (isset($_REQUEST['fromForm'])) {
+    $error = 'Заполните поля';
 }
+
+$error = $error ? '<div class="alert alert-danger">' . $error . '</div>' : '';
+
+$list = $saved;
+
+$saved = '<select class="form-control">';
+
+foreach ($list as $ceh => $workers) {
+    foreach ($workers as $data) {
+        //list($date, $name, $email, $ceh) = explode(';', $line);
+        $name = $data['name'];
+        $date = $data['date'];
+        $email = $data['email'];
+
+        $saved .= '<option>Дата: ' . $date . ', Имя: ' . $name . ' (' . $email . ')</option>';
+    }
+}
+$saved .= '</select>';
+
 ?>
 
-
+<?php
+function isCorrectLength($value ="name",$min,$max) {
+    return (mb_strlen($value) < $min || mb_strlen($value) > $max)
+        ? false
+        : true;
+}
+?>
 
 <!doctype html>
 
@@ -42,78 +85,87 @@ if (empty($name) || empty($phone) || empty($email) || empty ($gender) || empty (
     <title>homework</title>
 
 
-    <link rel="stylesheet" href="./css/bootstrap.min.css.">
+    <!--<link rel="stylesheet" href="./css/bootstrap.min.css.">-->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 </head>
 
-<body>
+<body class="back">
 
 <div class="container">
-
-
-    <h3> Форма обратной связи</h3>
-    <?php if ($message): ?>
-
-        <?= $message ?>
-
-    <?php else: ?>
-
-
-<div style="height: 200px ; width: 150px;border-color: #9fcdff;margin: auto;"
-                <form  class="form-horizontal" action="index.php" method="post">
-                    <p><select size="5" multiple name="hero[]">
-
-                            <option disabled>Выберите ваш цех</option>
-                            <option value="ЦТО">ЦТО</option>
-                            <option selected value="Турбинный цех">Турбинный цех</option>
-                            <option value="Котельный Цех">Котельный цех</option>
-                            <option value="Химический цех">Химический цех</option>
-                            <option value="Топливный цех">Топливный цех</option>
-                            <option value="Электрический цех">Электрический цех</option>
-                        </select></p>
-                    <button type="submit" class="btn btn-primary">Отправить</button>
-                </form>
-</div>
- <div style="height: 70px; width: 200px; margin: auto; background-color: #1e7e34; border-bottom-left-radius: 100px;">
+    <div class="row">
+        <div class="col-md-12">
+            <?=$error?>
+            <div class="panel panel-primary">
+                <div class="panel-heading">Форма обратной связи</div>
+                <div class="panel-body">
                     <form action="index.php" method="post">
-                        <p><b>Введите ваш отзыв:</b></p>
-                        <p><textarea rows="10" cols="45" name="text"></textarea></p>
-                        <p><input type="submit" value="Отправить"></p>
+                        <input type="hidden" name="fromForm" value="yes">
+                        <div class="form-group">
+                            <label for="type" class="col-sm-2 control-label">Тип:</label>
+                            <div class="col-sm-10">
+                                <select name="type" class="form-control">
+                                    <option value="Json">Json</option>
+                                    <option value="Dsv">Txt</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="name" class="col-sm-2 control-label">Введите ваш отзыв:</label>
+                            <div class="col-sm-10">
+                                <textarea rows="10" cols="45" name="text" class="form-control"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="name" class="col-sm-2 control-label">ваше имя</label>
+                            <div class="col-sm-10">
+                                <input type="text" name="name" class="form-control" placeholder="Имя">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="name" class="col-sm-2 control-label">Email</label>
+                            <div class="col-sm-10">
+                                <input type="email" name="email" class="form-control" placeholder="Введите email">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <input type="radio" name="ceh" value="турбинный цех" />турбинный цех <br>
+                            <input type="radio" name="ceh" value="котельный цех" />котельный цех <br>
+                            <input type="radio" name="ceh" value="Цех технического обслуживания" />Цех технического обслуживания <br>
+                            <input type="radio" name="ceh" value="Химический цех" />Химический цех <br>
+                        </div>
+                        <div class="form-group">
+                            <p>
+                                <select size="5" multiple name="hero[]">
+                                    <option disabled>Выберите ваш цех</option>
+                                    <option value="ЦТО">ЦТО</option>
+                                    <option selected value="Турбинный цех">Турбинный цех</option>
+                                    <option value="Котельный Цех">Котельный цех</option>
+                                    <option value="Химический цех">Химический цех</option>
+                                    <option value="Топливный цех">Топливный цех</option>
+                                    <option value="Электрический цех">Электрический цех</option>
+                                </select>
+                            </p>
+                        </div>
+                        <div class="form-group">
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox"> Запомнить меня
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">выбрать</button>
+
+                        <div class="form-group">
+                            <?=$saved?>
+                        </div>
                     </form>
                 </div>
-
-                    <div class="form-group">
-                        <div style="height: 100px; width: 1000px;"
-                        <label for="phone" class="col-sm-2 control-label">ваш емэйл</label>
-                        <div class="col-sm-10">
-                            <input type="email" name="email" class="form-control" placeholder="Введите email">
-                            <p> <input type="submit" value="Отправить"> </p>
-                        </div>
-                    </div>
-<input type="email" name="email" class="form-control" placeholder="Введите email">
-
-                    <div class="form-group">
-                        <div class="col-sm-offset-2 col-sm-10">
-                        </div>
-                        </div>
-                        <p class="alert-danger col-sm-4"><?= $error ?></p>
-
-<input type="radio" name="course" value="ASP.NET" />ASP.NET <br>
-<input type="radio" name="course" value="PHP" />PHP <br>
-<input type="radio" name="course" value="Ruby" />RUBY <br>
-
-
-<div class="checkbox">
-    <label>
-        <input type="checkbox"> Запомнить меня
-    </label>
+            </div>
+        </div>
+    </div>
 </div>
-<button type="submit" class="btn btn-default">Войти</button>
-<input type="radiobutton"
-</form>
-
-
-
-    <?php endif; ?>
 </body>
 </html>
 
