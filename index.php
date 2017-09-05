@@ -22,15 +22,36 @@ require_once './products.php'; //подключили файл с скрипто
 <div class="album text-muted">
     <div class="container">
         <div class="row">
-            <?php foreach ($products as $product) : ?>
-                <div class="card">
-                    <img src="./1.png.jpg" alt="Card image cap">
-                    <h6><?php echo getName($product) ?></h6>
-                    <span>Цена: <?php echo getPrice($product) ?></span>
-                    <p class="card-text"><?php echo getDescription($product) ?></p>
-                </div>
+<!--            --><?php //foreach ($products as $product) : ?>
+<!--                <div class="card">-->
+<!--                    <h6>--><?php //echo getName($product) ?><!--</h6>-->
+<!--                    <span>Цена: --><?php //echo getPrice($product) ?><!--</span>-->
+<!--                    <p class="card-text">--><?php //echo getDescription($product) ?><!--</p>-->
+<!--                    <img src="--><?//= getImage($product) ?><!--"/>-->
+<!--                    <a href ="--><?//= getLink($product) ?><!--" target="_blank">Купить</a>-->
+<!--                </div>-->
+<!--            --><?php //endforeach; ?>
+            <?php foreach ($products_new as $product) : ?>
+            <div class ="card">
+
+                <h6> Название : <?= $product ['name'] ?></h6>
+                <span> Цена: <?=$product ['price']?> </span>
+                <p> Описание: <?= $product ['description'] ?></p>
+                <img src ="<? = $product ['image'] ?>" alt="Фото">
+                <a href=" <?= $product ['link'] ?>" target="_blank">Купить</a>
+                <p>
+                    доступные цвета
+                    <?php foreach ($product ['colors'] as $key=> $color): ?>
+                    <span> <?= $key ?>: <?= $color >,</span>
+                    <?php endforeach; ?>
+                </p>
+                <p>
+                    <?= implode(',', $product['colors']) ?>
+                </p>
+            </div>
             <?php endforeach; ?>
         </div>
+
     </div>
 </div>
 
